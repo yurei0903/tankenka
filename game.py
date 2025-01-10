@@ -1,6 +1,6 @@
 import pygame as pg
 import maze
-
+import random
 # PlayerCharacterクラスの定義 [ここから]
 
 class PlayerCharacter:
@@ -35,7 +35,27 @@ class PlayerCharacter:
 
   def warp_to(self, vec):
     self.pos = vec
-# PlayerCharacterクラスの定義 [ここまで]
+# PlayerCharacterクラスの定義[ここまで]
+class Tekikyara(PlayerCharacter):
+  def __init__(self, init_pos, img_path):
+    super().__init__(init_pos, img_path)
+    self.size = (48, 48)
+    self.dir = 0
+    img_raw = pg.image.load(img_path)
+    self.__teki_img_arr = []
+
+    for i in range(4):
+      self.__teki_img_arr.append([])
+      for j in range(3):
+        p = pg.Vector2(48 * j, 48 * i)
+        tmp = img_raw.subsurface(pg.Rect(p, (48, 48)))
+        tmp = pg.transform.scale(tmp, self.size)
+        self.__teki_img_arr[i].append(tmp)
+      self.__teki_img_arr[i].append(self.__teki_img_arr[i][1])
+
+  def teki_get_img(self, frame):
+    return self.__teki_img_arr[self.dir][frame // 6 % 4]
+
 
 def main():
 
@@ -69,12 +89,18 @@ def main():
 
   # 自キャラの生成・初期化
   reimu = PlayerCharacter((2, 3), './data/img/reimu.png')
-
+  teki = Tekikyara((3, 4), "data/img/tekikyara.png")
   # ゲームループ
   while not exit_flag:
     if maizflag:
       llsc.maze_create()  # 迷路のスタート,ゴール,道を定める.
       reimu.warp_to(pg.Vector2(1, 1))
+      tekibasho = []
+      for i in range(len(llsc.maze)):
+        for j in range(len(llsc.maze[i])):
+          if (llsc.maze[i][j] == llsc.LOAD):
+            tekibasho.append(pg.Vector2(i, j))  # 敵キャラ設置
+      teki.warp_to(random.choice(tekibasho))
       maizflag = False
 
     # システムイベントの検出
@@ -127,6 +153,7 @@ def main():
     llsc.maze_put(screen, 4, llsc.end[0], llsc.end[1])
 
     screen.blit(reimu.get_img(frame), reimu.get_dp())
+    screen.blit(teki.teki_get_img(frame), teki.get_dp())
     # フレームカウンタの描画
     frame += 1
     frm_str = f'{frame:05}'
