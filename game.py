@@ -112,6 +112,9 @@ def main():
           reimu.move_to(m_vec[cmd_move])  # 画面範囲内なら実際に移動
       if (llsc.maze[int(af_pos.x)][int(af_pos.y)] == 4):
         maizflag = True
+        for i in range(len(llsc.maze)):
+          for j in range(len(llsc.maze[i])):
+            llsc.maze[i][j] = llsc.WALL
 
     # 自キャラの描画
 
