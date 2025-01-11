@@ -14,7 +14,7 @@ class PlayerCharacter:
     self.pos = pg.Vector2(init_pos)
     self.size = pg.Vector2(48, 64)
     self.dir = 2
-    self.life = 10
+    self.maxlife = 10
     img_raw = pg.image.load(img_path)
     self.__img_arr = []
     for i in range(4):
@@ -45,6 +45,9 @@ class PlayerCharacter:
     if (llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] > 0 and not llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] == 4):
       llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] -= 1
 
+  def life_reset(self):
+    self.life = self.maxlife
+
   def warp_to(self, vec):
     self.pos = vec
 # PlayerCharacterクラスの定義[ここまで]
@@ -54,6 +57,7 @@ class Tekikyara(PlayerCharacter):
     self.pos = init_pos
     self.size = (48, 48)
     self.dir = 0
+    self.maxlife = 1
     self.life = 1
     img_raw = pg.image.load(img_path)
     self.__teki_img_arr = []
@@ -131,7 +135,10 @@ def main():
   chip_s = 48  # マップチップの基本サイズ
   map_s = pg.Vector2(25, 13)  # マップの横・縦の配置数
   llsc = maze.meiro(20, 13)
+  atackfrequency = 20
   maizflag = True
+  atackflag = True
+  atackframe = 0
   pg.init()
   pg.display.set_caption('探検家の冒険')
   disp_w = int(chip_s * map_s.x)
@@ -175,6 +182,7 @@ def main():
             tekibasho.append(pg.Vector2(i, j))  # 敵キャラ設置
       tekistart = random.choice(tekibasho)
       teki.warp_to(tekistart)
+      teki.life_reset()
       maizflag = False
     # futures = []
     # with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
@@ -198,7 +206,12 @@ def main():
         elif event.key == pg.K_LEFT:
           cmd_move = 3
         elif event.key == pg.K_SPACE:
-          reimu.atack(teki, m_vec, llsc)
+          if atackflag:  # 攻撃するコマンド
+            reimu.atack(teki, m_vec, llsc)
+            atackflag = False
+            atackframe = frame
+    if (atackframe + atackfrequency == frame):  # 攻撃頻度を求めてる
+      atackflag = True
 
     # 背景描画
     screen.fill(pg.Color('BLACK'))
