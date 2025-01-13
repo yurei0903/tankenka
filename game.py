@@ -169,6 +169,7 @@ def main():
   karyoku = 1  # 敵の攻撃力
   # グリッド設定
   grid_c = '#bbbbbb'
+  font1 = pg.font.SysFont("hg正楷書体pro", 30)
 
   # 自キャラ移動関連
   cmd_move = -1  # 移動コマンドの管理変数
@@ -316,7 +317,9 @@ def main():
     time.sleep(0.03)
     frame += 1
     frm_str = f'{frame:05}'
-    screen.blit(font.render(frm_str, True, 'WHITE'), (10, 10))
+    pg.draw.rect(screen, ("WHITE"), (1008, 10, 144, 96))
+
+    screen.blit(font1.render(f"{kaisou}階", True, 'BLACK'), (1056, 45))
     screen.blit(font.render(f'{reimu.life}', True, 'WHITE'), (30, 20))
 
     # 画面の更新と同期
