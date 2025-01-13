@@ -169,7 +169,7 @@ def main():
   karyoku = 1  # 敵の攻撃力
   # グリッド設定
   grid_c = '#bbbbbb'
-  font1 = pg.font.SysFont("hg正楷書体pro", 30)
+  font1 = pg.font.SysFont("font/DragonQuestFC.ttf", 30)
 
   # 自キャラ移動関連
   cmd_move = -1  # 移動コマンドの管理変数
