@@ -3,6 +3,7 @@ import maze
 import random
 import heapq
 import concurrent.futures
+import time
 def heuristic(a, b):
   return abs(a[0] - b[0]) + abs(a[0] - b[0])
 # PlayerCharacterクラスの定義 [ここから]
@@ -15,6 +16,7 @@ class PlayerCharacter:
     self.size = pg.Vector2(48, 64)
     self.dir = 2
     self.maxlife = 10
+    self.life = 10
     img_raw = pg.image.load(img_path)
     self.__img_arr = []
     for i in range(4):
@@ -40,10 +42,12 @@ class PlayerCharacter:
 
   def atack(self, enemy, muki, llsc):
     atakcksaki = self.pos + muki[self.dir]
-    if (self.pos + muki[self.dir] == enemy.pos):
-      enemy.life -= 1
-    if (llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] > 0 and not llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] == 4):
+    for i in range(len(enemy)):
+      if (self.pos + muki[self.dir] == enemy[i].pos):
+        enemy[i].life -= 1
+    if (llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] > 0 and llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] < 4):
       llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] -= 1
+    return False
 
   def life_reset(self):
     self.life = self.maxlife
@@ -77,11 +81,10 @@ class Tekikyara(PlayerCharacter):
   def a_star_search(self, maze, st, en):
     start = (int(st[0]), int(st[1]))
     end = (int(en[0]), int(en[1]))
-    print(end)
-    neighbors = [(0, 1),
-                 (0, -1),
-                 (1, 0),
-                 (-1, 0)]
+    neighbors = [(1, 0),
+                 (-1, 0),
+                 (0, 1),
+                 (0, -1)]
     close_set = set()
     came_from = {}
     gscore = {start: 0}
@@ -128,6 +131,16 @@ class Tekikyara(PlayerCharacter):
 
     return False
 
+  def atack_shori(self, enemy, muki, llsc):
+    atakcksaki = self.pos + muki[self.dir]
+    if (self.pos + muki[self.dir] == enemy.pos):
+      enemy.life -= 1
+
+  def atack(self, teki, m_vec, llsc, atackflag):
+    if atackflag:  # 攻撃するコマンド
+      self.atack_shori(teki, m_vec, llsc)
+      return False
+
 
 def main():
 
@@ -135,21 +148,25 @@ def main():
   chip_s = 48  # マップチップの基本サイズ
   map_s = pg.Vector2(25, 13)  # マップの横・縦の配置数
   llsc = maze.meiro(20, 13)
-  atackfrequency = 20
+  atackfrequency = 30
+  kaisou = 0  # 今が何階かを示す
   maizflag = True
   atackflag = True
-  atackframe = 0
+  atackframe = 0  # 攻撃したタイミングを記録する
   pg.init()
+  path = []
   pg.display.set_caption('探検家の冒険')
   disp_w = int(chip_s * map_s.x)
   disp_h = int(chip_s * map_s.y)
   screen = pg.display.set_mode((disp_w, disp_h))
   clock = pg.time.Clock()
   font = pg.font.Font(None, 15)
-  frame = 0
+  frame = 0  # 現在のフレーム
   exit_flag = False
   exit_code = '000'
   path_n = -1
+  tekikazu = 0  # 敵の数
+  karyoku = 1  # 敵の攻撃力
   # グリッド設定
   grid_c = '#bbbbbb'
 
@@ -162,27 +179,42 @@ def main():
       pg.Vector2(-1, 0)
   ]  # 移動コマンドに対応したXYの移動量
   t_idou = [pg.Vector2(0, 1),
-            pg.Vector2(0, -1),
+            pg.Vector2(-1, 0),
             pg.Vector2(1, 0),
-            pg.Vector2(-1, 0)
+            pg.Vector2(0, -1),
             ]
 
   # 自キャラの生成・初期化
   reimu = PlayerCharacter((2, 3), './data/img/reimu.png')
-  teki = Tekikyara((3, 4), "data/img/tekikyara.png")
+  teki = []
+
   # ゲームループ
   while not exit_flag:
+    if (reimu.life == 0):
+      screen.blit(font.render("GAMEOVERA", True, 'BLACK'), (50, 50))
+      continue
     if maizflag:
+      kaisou += 1
+      tekikazu = kaisou - 1 if kaisou < 6 else 5 + int(kaisou / 5)
       llsc.maze_create()  # 迷路のスタート,ゴール,道を定める.
       reimu.warp_to(pg.Vector2(1, 1))
-      tekibasho = []
-      for i in range(len(llsc.maze)):
-        for j in range(len(llsc.maze[i])):
-          if (llsc.maze[i][j] == llsc.LOAD):
-            tekibasho.append(pg.Vector2(i, j))  # 敵キャラ設置
-      tekistart = random.choice(tekibasho)
-      teki.warp_to(tekistart)
-      teki.life_reset()
+      for x in range(tekikazu):
+        teki.append(Tekikyara((3, 4), "data/img/tekikyara.png"))
+        tekibasho = []
+        for i in range(len(llsc.maze)):
+          for j in range(len(llsc.maze[i])):
+            if (llsc.maze[i][j] == llsc.LOAD):
+              tekibasho.append(pg.Vector2(i, j))  # 敵キャラ設置
+        tekistart = random.choice(tekibasho)
+        teki[x].warp_to(tekistart)
+        teki_atackflag = []
+        teki_atackflag.append(True)
+        teki_atackframe = []
+        teki_atackframe.append(0)
+        teki_atackflag.append(True)
+        teki_atackframe.append(frame)
+        teki[x].life_reset()
+
       maizflag = False
     # futures = []
     # with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
@@ -205,12 +237,11 @@ def main():
           cmd_move = 2
         elif event.key == pg.K_LEFT:
           cmd_move = 3
-        elif event.key == pg.K_SPACE:
-          if atackflag:  # 攻撃するコマンド
-            reimu.atack(teki, m_vec, llsc)
-            atackflag = False
+        elif event.key == pg.K_SPACE:  # 攻撃
+          if (atackflag):
             atackframe = frame
-    if (atackframe + atackfrequency == frame):  # 攻撃頻度を求めてる
+            atackflag = reimu.atack(teki, m_vec, llsc)
+    if (atackframe + atackfrequency < frame):  # 攻撃頻度を求めてる
       atackflag = True
 
     # 背景描画
@@ -244,35 +275,49 @@ def main():
         llsc.maze_put(screen, llsc.WALL_HARD, i, j)
         llsc.maze_put(screen, llsc.WALL_KOWARE, i, j)
     llsc.maze_put(screen, 4, llsc.end[0], llsc.end[1])
+    if (reimu.life > 0):
+      screen.blit(reimu.get_img(frame), reimu.get_dp())  # 自キャラ
 
-    screen.blit(reimu.get_img(frame), reimu.get_dp())  # 自キャラ
-    print(reimu.pos)
-    path = teki.a_star_search(llsc.maze, teki.pos, reimu.pos)
+    for i in range(tekikazu):
+      path.append([])
+      path[i] = (teki[i].a_star_search(llsc.maze, teki[i].pos, reimu.pos))
     # concurrent.futures.wait(futures)
-
     # # 全てのタスクが終わっているので結果を取得
     # for future in futures:
     #   path = future.result()
-    if (teki.life > 0):
-      if (path):
 
-        # path_n = -1 * frame // 50
-        # if (abs(path_n) < len(path)):
-        #   p = path[path_n]
-        # else:
-        if (frame % 20 == 0):
-          path_n = -1
-          p = path[path_n]
-          teki.pos = (pg.Vector2(p[0], p[1]))
-      else:
-        print("pass")
+    for x in range(tekikazu):
 
-      screen.blit(teki.teki_get_img(frame), teki.get_dp())  # 敵キャラ
+      if (teki[x].life > 0):
+        if (path[x]):
+          if (not len(path[x]) == 1):
+
+            # path_n = -1 * frame // 50
+            # if (abs(path_n) < len(path)):
+            #   p = path[path_n]
+            # else:
+            if (frame % 20 == 0):
+              path_n = -1  # 20フレームごとに移動
+              p = path[x][path_n]
+              tekimuki = pg.Vector2(p[0], p[1]) - teki[x].pos
+              teki[x].pos = (pg.Vector2(p[0], p[1]))
+              for muki in range(len(t_idou)):
+                if (t_idou[muki] == tekimuki):
+                  teki[x].dir = muki
+          elif (teki_atackflag[0]):  # 敵の攻撃
+            teki_atackflag[0] = teki[x].atack(
+                reimu, t_idou, llsc, teki_atackflag[0])
+            teki_atackframe[0] = frame
+          if (teki_atackframe[0] + atackfrequency < frame):  # 攻撃頻度を求めてる
+            teki_atackflag[0] = True
+          screen.blit(teki[x].teki_get_img(frame), teki[x].get_dp())  # 敵キャラ
+
     # フレームカウンタの描画
+    time.sleep(0.03)
     frame += 1
     frm_str = f'{frame:05}'
-    screen.blit(font.render(frm_str, True, 'BLACK'), (10, 10))
-    screen.blit(font.render(f'{reimu.pos}', True, 'BLACK'), (10, 20))
+    screen.blit(font.render(frm_str, True, 'WHITE'), (10, 10))
+    screen.blit(font.render(f'{reimu.life}', True, 'WHITE'), (30, 20))
 
     # 画面の更新と同期
     pg.display.update()
