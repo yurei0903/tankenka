@@ -14,6 +14,8 @@ class PlayerCharacter:
   def __init__(self, init_pos, img_path):
     self.pos = pg.Vector2(init_pos)
     self.size = pg.Vector2(48, 64)
+    self.lv = 1
+    self.exp = 0
     self.dir = 2
     self.maxlife = 10
     self.life = 10
@@ -45,6 +47,7 @@ class PlayerCharacter:
     for i in range(len(enemy)):
       if (self.pos + muki[self.dir] == enemy[i].pos):
         enemy[i].life -= 1
+        self.exp += 1
     if (llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] > 0 and llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] < 4):
       llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] -= 1
     return False
@@ -54,6 +57,16 @@ class PlayerCharacter:
 
   def warp_to(self, vec):
     self.pos = vec
+
+  def lvup(self):
+    if (self.exp == 10):  # 敵を10体倒したらlvアップ
+      self.lv += 1
+      self.exp = 0
+      self.maxlife += 1
+      if (self.maxlife < self.life + self.lv + 1):
+        self.life += 1 + self.lv
+      else:
+        self.life = self.maxlife
 # PlayerCharacterクラスの定義[ここまで]
 class Tekikyara(PlayerCharacter):
   def __init__(self, init_pos, img_path):
@@ -63,6 +76,7 @@ class Tekikyara(PlayerCharacter):
     self.dir = 0
     self.maxlife = 1
     self.life = 1
+    self.power = 1
     img_raw = pg.image.load(img_path)
     self.__teki_img_arr = []
 
@@ -134,12 +148,15 @@ class Tekikyara(PlayerCharacter):
   def atack_shori(self, enemy, muki, llsc):
     atakcksaki = self.pos + muki[self.dir]
     if (self.pos + muki[self.dir] == enemy.pos):
-      enemy.life -= 1
+      enemy.life -= self.power
 
   def atack(self, teki, m_vec, llsc, atackflag):
     if atackflag:  # 攻撃するコマンド
       self.atack_shori(teki, m_vec, llsc)
       return False
+
+  def powerup(self, kaisou):
+    self.power = 1 + int(kaisou / 3)
 
 
 def main():
@@ -167,9 +184,10 @@ def main():
   path_n = -1
   tekikazu = 0  # 敵の数
   karyoku = 1  # 敵の攻撃力
+  heart_img = pg.image.load("data\img\heart.png")
   # グリッド設定
   grid_c = '#bbbbbb'
-  font1 = pg.font.SysFont("font/DragonQuestFC.ttf", 30)
+  font1 = pg.font.SysFont("hg正楷書体pro", 30)
 
   # 自キャラ移動関連
   cmd_move = -1  # 移動コマンドの管理変数
@@ -197,6 +215,8 @@ def main():
     if maizflag:
       kaisou += 1
       tekikazu = kaisou - 1 if kaisou < 6 else 5 + int(kaisou / 5)
+      if (tekikazu > 20):
+        tekikazu = 20
       llsc.maze_create()  # 迷路のスタート,ゴール,道を定める.
       reimu.warp_to(pg.Vector2(1, 1))
       for x in range(tekikazu):
@@ -312,12 +332,23 @@ def main():
           if (teki_atackframe[0] + atackfrequency < frame):  # 攻撃頻度を求めてる
             teki_atackflag[0] = True
           screen.blit(teki[x].teki_get_img(frame), teki[x].get_dp())  # 敵キャラ
+    reimu.lvup()
+    for i in range(tekikazu):
+      teki[i].powerup(kaisou)
 
     # フレームカウンタの描画
     time.sleep(0.03)
     frame += 1
     frm_str = f'{frame:05}'
     pg.draw.rect(screen, ("WHITE"), (1008, 10, 144, 96))
+
+    screen.blit(heart_img, (1010, 130))  # 体力のハート
+    screen.blit(font1.render(
+        f"{reimu.maxlife}/{reimu.life}", True, 'BLACK'), (1038, 180))
+    pg.draw.rect(screen, ("YELLOW"), (1008, 300, 144, 150))
+    screen.blit(font1.render(f"LV:{reimu.lv}", True, 'BLACK'), (1056, 340))
+    screen.blit(font1.render(
+        f"next:{reimu.exp}/10", True, 'BLACK'), (1036, 360))
 
     screen.blit(font1.render(f"{kaisou}階", True, 'BLACK'), (1056, 45))
     screen.blit(font.render(f'{reimu.life}', True, 'WHITE'), (30, 20))
