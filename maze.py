@@ -58,7 +58,21 @@ class meiro:
     for i in range(self.c):
       self.maze[0][i] = self.WALL_HARD
       self.maze[self.r - 1][i] = self.WALL_HARD
+
     return self.maze, start, self.end
+
+  def maze_change(self, moto, henko, kazu):
+    kabebasho = []
+    for i in range(len(self.maze)):
+      for j in range(len(self.maze[i])):
+        if (self.maze[i][j] == moto):
+          if (i == 1 and j == 1):
+            pass
+          else:
+            kabebasho.append([i, j])
+    for i in range(kazu):
+      hakai = random.choice(kabebasho)
+      self.maze[hakai[0]][hakai[1]] = henko
 
   def maze_put(self, screen, hyoji, i, j):
     if self.maze[i][j] == hyoji:

@@ -42,14 +42,16 @@ class PlayerCharacter:
   def get_img(self, frame):
     return self.__img_arr[self.dir][frame // 6 % 4]
 
-  def atack(self, enemy, muki, llsc):
+  def atack(self, enemy, muki, llsc, K_SE, H_SE):
     atakcksaki = self.pos + muki[self.dir]
     for i in range(len(enemy)):
       if (self.pos + muki[self.dir] == enemy[i].pos):
         enemy[i].life -= 1
+        K_SE.play()
         self.exp += 1
     if (llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] > 0 and llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] < 4):
       llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] -= 1
+      H_SE.play()
     return False
 
   def life_reset(self):
@@ -59,9 +61,9 @@ class PlayerCharacter:
     self.pos = vec
 
   def lvup(self):
-    if (self.exp == 10):  # 敵を10体倒したらlvアップ
+    if (self.exp > 10):  # 敵を10体倒したらlvアップ
       self.lv += 1
-      self.exp = 0
+      self.exp = self.exp - 10
       self.maxlife += 1
       if (self.maxlife < self.life + self.lv + 1):
         self.life += 1 + self.lv
@@ -145,14 +147,15 @@ class Tekikyara(PlayerCharacter):
 
     return False
 
-  def atack_shori(self, enemy, muki, llsc):
+  def atack_shori(self, enemy, muki, llsc, SE):
     atakcksaki = self.pos + muki[self.dir]
     if (self.pos + muki[self.dir] == enemy.pos):
       enemy.life -= self.power
+      SE.play()
 
-  def atack(self, teki, m_vec, llsc, atackflag):
+  def atack(self, teki, m_vec, llsc, atackflag, SE):
     if atackflag:  # 攻撃するコマンド
-      self.atack_shori(teki, m_vec, llsc)
+      self.atack_shori(teki, m_vec, llsc, SE)
       return False
 
   def powerup(self, kaisou):
@@ -185,10 +188,15 @@ def main():
   tekikazu = 0  # 敵の数
   karyoku = 1  # 敵の攻撃力
   heart_img = pg.image.load("data\img\heart.png")
+  tekik_kougeki_SE = pg.mixer.Sound("data\music\maou_se_battle17.wav")
+  kougeki_SE = pg.mixer.Sound("data\music\maou_se_battle14.wav")
+  hakai_SE = pg.mixer.Sound("data\music\maou_se_battle18.wav")
   # グリッド設定
   grid_c = '#bbbbbb'
   font1 = pg.font.SysFont("hg正楷書体pro", 30)
+  gameover_font = pg.font.SysFont("hg正楷書体pro", 70)
 
+  bgm = "data\music\maou_bgm_8bit09.mp3"
   # 自キャラ移動関連
   cmd_move = -1  # 移動コマンドの管理変数
   m_vec = [
@@ -206,11 +214,29 @@ def main():
   # 自キャラの生成・初期化
   reimu = PlayerCharacter((2, 3), './data/img/reimu.png')
   teki = []
-
+  pg.mixer.music.load(bgm)
+  pg.mixer.music.play(loops=-1)
   # ゲームループ
   while not exit_flag:
     if (reimu.life == 0):
-      screen.blit(font.render("GAMEOVERA", True, 'BLACK'), (50, 50))
+      screen.fill((255, 255, 255))
+
+      screen.blit(gameover_font.render(
+          f"GAMEOVER", True, 'BLACK'), (50, 100))
+      screen.blit(gameover_font.render(
+          f"{kaisou}階", True, 'BLACK'), (50, 200))
+      screen.blit(gameover_font.render(
+          f"SPACEで再開", True, 'BLACK'), (50, 300))
+      for event in pg.event.get():
+        if event.type == pg.KEYDOWN:
+          if event.key == pg.K_SPACE:
+            reimu.life = 10
+            reimu.maxlife = 10
+        if event.type == pg.QUIT:  # ウィンドウ[X]の押下
+          exit_flag = True
+          exit_code = '001'
+      pg.display.update()
+
       continue
     if maizflag:
       kaisou += 1
@@ -218,14 +244,20 @@ def main():
       if (tekikazu > 20):
         tekikazu = 20
       llsc.maze_create()  # 迷路のスタート,ゴール,道を定める.
+      llsc.maze_change(llsc.WALL, llsc.LOAD, random.randint(6, 11))
+      llsc.maze_change(llsc.WALL, llsc.WALL_KOWARE, random.randint(2, 6))
+      llsc.maze_change(llsc.WALL, llsc.WALL_HARD, random.randint(0, 3))
+      llsc.maze_change(llsc.LOAD, llsc.WALL, random.randint(0, 5))
+      llsc.maze_change(llsc.LOAD, llsc.WALL_KOWARE, random.randint(0, 2))
+      llsc.maze_change(llsc.LOAD, llsc.WALL_HARD, random.randint(0, 3))
       reimu.warp_to(pg.Vector2(1, 1))
       for x in range(tekikazu):
-        teki.append(Tekikyara((3, 4), "data/img/tekikyara.png"))
         tekibasho = []
         for i in range(len(llsc.maze)):
           for j in range(len(llsc.maze[i])):
             if (llsc.maze[i][j] == llsc.LOAD):
               tekibasho.append(pg.Vector2(i, j))  # 敵キャラ設置
+        teki.append(Tekikyara(tekibasho[0], "data/img/tekikyara.png"))
         tekistart = random.choice(tekibasho)
         teki[x].warp_to(tekistart)
         teki_atackflag = []
@@ -261,7 +293,7 @@ def main():
         elif event.key == pg.K_SPACE:  # 攻撃
           if (atackflag):
             atackframe = frame
-            atackflag = reimu.atack(teki, m_vec, llsc)
+            atackflag = reimu.atack(teki, m_vec, llsc, kougeki_SE, hakai_SE)
     if (atackframe + atackfrequency < frame):  # 攻撃頻度を求めてる
       atackflag = True
 
@@ -327,7 +359,7 @@ def main():
                   teki[x].dir = muki
           elif (teki_atackflag[0]):  # 敵の攻撃
             teki_atackflag[0] = teki[x].atack(
-                reimu, t_idou, llsc, teki_atackflag[0])
+                reimu, t_idou, llsc, teki_atackflag[0], tekik_kougeki_SE)
             teki_atackframe[0] = frame
           if (teki_atackframe[0] + atackfrequency < frame):  # 攻撃頻度を求めてる
             teki_atackflag[0] = True
@@ -346,9 +378,9 @@ def main():
     screen.blit(font1.render(
         f"{reimu.maxlife}/{reimu.life}", True, 'BLACK'), (1038, 180))
     pg.draw.rect(screen, ("YELLOW"), (1008, 300, 144, 150))
-    screen.blit(font1.render(f"LV:{reimu.lv}", True, 'BLACK'), (1056, 340))
+    screen.blit(font1.render(f"LV:{reimu.lv}", True, 'BLACK'), (1056, 320))
     screen.blit(font1.render(
-        f"next:{reimu.exp}/10", True, 'BLACK'), (1036, 360))
+        f"next:{reimu.exp}/10", True, 'BLACK'), (1011, 380))
 
     screen.blit(font1.render(f"{kaisou}階", True, 'BLACK'), (1056, 45))
     screen.blit(font.render(f'{reimu.life}', True, 'WHITE'), (30, 20))
