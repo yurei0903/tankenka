@@ -229,14 +229,14 @@ def main():
   # ゲームループ
   while not exit_flag:
     if (reimu.life <= 0):
-      screen.fill((255, 255, 255))
+      screen.fill((0, 0, 0))
 
       screen.blit(gameover_font.render(
-          f"GAMEOVER", True, 'BLACK'), (50, 100))
+          f"GAMEOVER", True, 'RED'), (50, 100))
       screen.blit(gameover_font.render(
-          f"{kaisou}階", True, 'BLACK'), (50, 200))
+          f"{kaisou}階", True, 'RED'), (50, 200))
       screen.blit(gameover_font.render(
-          f"SPACEで再開", True, 'BLACK'), (50, 300))
+          f"SPACEで再開", True, 'RED'), (50, 300))
       for event in pg.event.get():
         if event.type == pg.KEYDOWN:
           if event.key == pg.K_SPACE:
@@ -374,12 +374,12 @@ def main():
               for muki in range(len(t_idou)):
                 if (t_idou[muki] == tekimuki):
                   teki[x].dir = muki
-          elif (teki_atackflag[0]):  # 敵の攻撃
-            teki_atackflag[0] = teki[x].atack(
-                reimu, t_idou, llsc, teki_atackflag[0], tekik_kougeki_SE)
-            teki_atackframe[0] = frame
-          if (teki_atackframe[0] + atackfrequency < frame):  # 攻撃頻度を求めてる
-            teki_atackflag[0] = True
+          elif (teki_atackflag[x]):  # 敵の攻撃
+            teki_atackflag[x] = teki[x].atack(
+                reimu, t_idou, llsc, teki_atackflag[x], tekik_kougeki_SE)
+            teki_atackframe[x] = frame
+          if (teki_atackframe[x] + atackfrequency < frame):  # 攻撃頻度
+            teki_atackflag[x] = True
         screen.blit(teki[x].teki_get_img(frame), teki[x].get_dp())  # 敵キャラ
     reimu.lvup()
     for i in range(tekikazu):
