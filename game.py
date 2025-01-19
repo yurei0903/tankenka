@@ -12,11 +12,13 @@ class PlayerCharacter:
 
   # コンストラクタ
   def __init__(self, init_pos, img_path):
+    self.atackflag = False
+    self.cmd_move = [False] * 4
     self.pos = pg.Vector2(init_pos)
-    self.size = pg.Vector2(48, 64)
+    self.size = pg.Vector2(48, 48)
     self.lv = 1
     self.exp = 0
-    self.dir = 2
+    self.dir = 0
     self.maxlife = 10
     self.life = 10
     img_raw = pg.image.load(img_path)
@@ -24,8 +26,8 @@ class PlayerCharacter:
     for i in range(4):
       self.__img_arr.append([])
       for j in range(3):
-        p = pg.Vector2(24 * j, 32 * i)
-        tmp = img_raw.subsurface(pg.Rect(p, (24, 32)))
+        p = pg.Vector2(32 * j, 32 * i)
+        tmp = img_raw.subsurface(pg.Rect(p, (32, 32)))
         tmp = pg.transform.scale(tmp, self.size)
         self.__img_arr[i].append(tmp)
       self.__img_arr[i].append(self.__img_arr[i][1])
@@ -52,7 +54,6 @@ class PlayerCharacter:
     if (llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] > 0 and llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] < 4):
       llsc.maze[int(atakcksaki[0])][int(atakcksaki[1])] -= 1
       H_SE.play()
-    return False
 
   def life_reset(self):
     self.life = self.maxlife
@@ -69,13 +70,21 @@ class PlayerCharacter:
         self.life += 1 + self.lv
       else:
         self.life = self.maxlife
-# PlayerCharacterクラスの定義[ここまで]
+
+  def shokika(self):
+    self.maxlife = 10
+    self.life = 10
+    self.lv = 1
+    self.exp = 0
+    # PlayerCharacterクラスの定義[ここまで]
+
+
 class Tekikyara(PlayerCharacter):
   def __init__(self, init_pos, img_path):
     super().__init__(init_pos, img_path)
     self.pos = init_pos
     self.size = (48, 48)
-    self.dir = 0
+    self.dir = 2
     self.maxlife = 1
     self.life = 1
     self.power = 1
@@ -171,7 +180,6 @@ def main():
   atackfrequency = 30
   kaisou = 0  # 今が何階かを示す
   maizflag = True
-  atackflag = True
   atackframe = 0  # 攻撃したタイミングを記録する
   pg.init()
   path = []
@@ -198,27 +206,29 @@ def main():
 
   bgm = "data\music\maou_bgm_8bit09.mp3"
   # 自キャラ移動関連
-  cmd_move = -1  # 移動コマンドの管理変数
-  m_vec = [
-      pg.Vector2(0, -1),
-      pg.Vector2(1, 0),
-      pg.Vector2(0, 1),
-      pg.Vector2(-1, 0)
-  ]  # 移動コマンドに対応したXYの移動量
+  m_vec = [pg.Vector2(0, 1),
+
+
+           pg.Vector2(-1, 0),
+           pg.Vector2(1, 0),
+           pg.Vector2(0, - 1)
+
+           ]  # 移動コマンドに対応したXYの移動量
   t_idou = [pg.Vector2(0, 1),
             pg.Vector2(-1, 0),
             pg.Vector2(1, 0),
-            pg.Vector2(0, -1),
+            pg.Vector2(0, -1)
             ]
 
   # 自キャラの生成・初期化
-  reimu = PlayerCharacter((2, 3), './data/img/reimu.png')
-  teki = []
+  reimu = PlayerCharacter((2, 3), './data/img/tankenka.png')
   pg.mixer.music.load(bgm)
   pg.mixer.music.play(loops=-1)
+  # while flag:
+  #   screen.fill((255, 255, 255))
   # ゲームループ
   while not exit_flag:
-    if (reimu.life == 0):
+    if (reimu.life <= 0):
       screen.fill((255, 255, 255))
 
       screen.blit(gameover_font.render(
@@ -230,8 +240,9 @@ def main():
       for event in pg.event.get():
         if event.type == pg.KEYDOWN:
           if event.key == pg.K_SPACE:
-            reimu.life = 10
-            reimu.maxlife = 10
+            kaisou = 0
+            maizflag = True
+            reimu.shokika()
         if event.type == pg.QUIT:  # ウィンドウ[X]の押下
           exit_flag = True
           exit_code = '001'
@@ -239,6 +250,7 @@ def main():
 
       continue
     if maizflag:
+      teki = []
       kaisou += 1
       tekikazu = kaisou - 1 if kaisou < 6 else 5 + int(kaisou / 5)
       if (tekikazu > 20):
@@ -257,9 +269,8 @@ def main():
           for j in range(len(llsc.maze[i])):
             if (llsc.maze[i][j] == llsc.LOAD):
               tekibasho.append(pg.Vector2(i, j))  # 敵キャラ設置
-        teki.append(Tekikyara(tekibasho[0], "data/img/tekikyara.png"))
         tekistart = random.choice(tekibasho)
-        teki[x].warp_to(tekistart)
+        teki.append(Tekikyara(tekistart, "data/img/tekikyara.png"))
         teki_atackflag = []
         teki_atackflag.append(True)
         teki_atackframe = []
@@ -275,49 +286,40 @@ def main():
       # futures.append(future)
 
     # システムイベントの検出
-    cmd_move = -1
+
     for event in pg.event.get():
       if event.type == pg.QUIT:  # ウィンドウ[X]の押下
         exit_flag = True
         exit_code = '001'
       # 移動操作の「キー入力」の受け取り処理
-      if event.type == pg.KEYDOWN:
-        if event.key == pg.K_UP:
-          cmd_move = 0
-        elif event.key == pg.K_RIGHT:
-          cmd_move = 1
-        elif event.key == pg.K_DOWN:
-          cmd_move = 2
-        elif event.key == pg.K_LEFT:
-          cmd_move = 3
-        elif event.key == pg.K_SPACE:  # 攻撃
-          if (atackflag):
-            atackframe = frame
-            atackflag = reimu.atack(teki, m_vec, llsc, kougeki_SE, hakai_SE)
-    if (atackframe + atackfrequency < frame):  # 攻撃頻度を求めてる
-      atackflag = True
+      key = pg.key.get_pressed()
+      reimu.cmd_move[3] = True if key[pg.K_UP] else False
+      reimu.cmd_move[2] = True if key[pg.K_RIGHT] else False
+      reimu.cmd_move[0] = True if key[pg.K_DOWN] else False
+      reimu.cmd_move[1] = True if key[pg.K_LEFT] else False
+      reimu.atackflag = True if key[pg.K_SPACE] else False
+    if (reimu.atackflag):
+      if (atackframe + atackfrequency < frame):  # 攻撃頻度を求めてる
+        atackframe = frame
+        reimu.atack(teki, m_vec, llsc, kougeki_SE, hakai_SE)
 
     # 背景描画
     screen.fill(pg.Color('BLACK'))
 
-    # グリッド
-    for x in range(0, disp_w, chip_s):  # 縦線
-      pg.draw.line(screen, grid_c, (x, 0), (x, disp_h))
-    for y in range(0, disp_h, chip_s):  # 横線
-      pg.draw.line(screen, grid_c, (0, y), (disp_w, y))
-
     # 移動コマンドの処理
-    if cmd_move != -1:
-      reimu.turn_to(cmd_move)
-      af_pos = reimu.pos + m_vec[cmd_move]  # 移動(仮)した座標
-      if (0 <= af_pos.x <= map_s.x - 1) and (0 <= af_pos.y <= map_s.y - 1):
-        if (not llsc.maze[int(af_pos.x)][int(af_pos.y)] > 0):
-          reimu.move_to(m_vec[cmd_move])  # 画面範囲内なら実際に移動
-      if (llsc.maze[int(af_pos.x)][int(af_pos.y)] == 4):
-        maizflag = True
-        for i in range(len(llsc.maze)):
-          for j in range(len(llsc.maze[i])):
-            llsc.maze[i][j] = llsc.WALL
+    if (frame % 5 == 0):
+      for x in range(len(reimu.cmd_move)):
+        if reimu.cmd_move[x] == True:
+          reimu.turn_to(x)
+          af_pos = reimu.pos + m_vec[x]  # 移動(仮)した座標
+          if (0 <= af_pos.x <= map_s.x - 1) and (0 <= af_pos.y <= map_s.y - 1):
+            if (not llsc.maze[int(af_pos.x)][int(af_pos.y)] > 0):
+              reimu.move_to(m_vec[x])  # 画面範囲内なら実際に移動
+          if (llsc.maze[int(af_pos.x)][int(af_pos.y)] == 4):
+            maizflag = True
+            for i in range(len(llsc.maze)):
+              for j in range(len(llsc.maze[i])):
+                llsc.maze[i][j] = llsc.WALL
 
     # 自キャラの描画
 
@@ -339,6 +341,21 @@ def main():
     # for future in futures:
     #   path = future.result()
 
+    # フレームカウンタの描画
+    frame += 1
+    frm_str = f'{frame:05}'
+    pg.draw.rect(screen, ("WHITE"), (1008, 10, 144, 96))
+
+    screen.blit(heart_img, (1010, 130))  # 体力のハート
+    screen.blit(font1.render(
+        f"{reimu.maxlife}/{reimu.life}", True, 'BLACK'), (1038, 180))
+    pg.draw.rect(screen, ("YELLOW"), (1008, 300, 144, 150))
+    screen.blit(font1.render(f"LV:{reimu.lv}", True, 'BLACK'), (1056, 320))
+    screen.blit(font1.render(
+        f"next:{reimu.exp}/10", True, 'BLACK'), (1011, 380))
+
+    screen.blit(font1.render(f"{kaisou}階", True, 'BLACK'), (1056, 45))
+    screen.blit(font.render(f'{reimu.life}', True, 'WHITE'), (30, 20))
     for x in range(tekikazu):
 
       if (teki[x].life > 0):
@@ -363,28 +380,10 @@ def main():
             teki_atackframe[0] = frame
           if (teki_atackframe[0] + atackfrequency < frame):  # 攻撃頻度を求めてる
             teki_atackflag[0] = True
-          screen.blit(teki[x].teki_get_img(frame), teki[x].get_dp())  # 敵キャラ
+        screen.blit(teki[x].teki_get_img(frame), teki[x].get_dp())  # 敵キャラ
     reimu.lvup()
     for i in range(tekikazu):
       teki[i].powerup(kaisou)
-
-    # フレームカウンタの描画
-    time.sleep(0.03)
-    frame += 1
-    frm_str = f'{frame:05}'
-    pg.draw.rect(screen, ("WHITE"), (1008, 10, 144, 96))
-
-    screen.blit(heart_img, (1010, 130))  # 体力のハート
-    screen.blit(font1.render(
-        f"{reimu.maxlife}/{reimu.life}", True, 'BLACK'), (1038, 180))
-    pg.draw.rect(screen, ("YELLOW"), (1008, 300, 144, 150))
-    screen.blit(font1.render(f"LV:{reimu.lv}", True, 'BLACK'), (1056, 320))
-    screen.blit(font1.render(
-        f"next:{reimu.exp}/10", True, 'BLACK'), (1011, 380))
-
-    screen.blit(font1.render(f"{kaisou}階", True, 'BLACK'), (1056, 45))
-    screen.blit(font.render(f'{reimu.life}', True, 'WHITE'), (30, 20))
-
     # 画面の更新と同期
     pg.display.update()
     clock.tick(30)

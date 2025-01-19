@@ -23,6 +23,7 @@ class meiro:
       self.tile_img.append(pg.transform.scale(img, (48, 48)))
 
   def maze_create(self):
+    self.maze = [[2 for _ in range(self.c)] for _ in range(self.r)]
     start = (1, 1)
     stack = [start]
     kanikama = 0
