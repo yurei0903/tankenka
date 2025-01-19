@@ -203,6 +203,7 @@ def main():
   grid_c = '#bbbbbb'
   font1 = pg.font.SysFont("hg正楷書体pro", 30)
   gameover_font = pg.font.SysFont("hg正楷書体pro", 70)
+  start_font = pg.font.SysFont("hg正楷書体pro", 40)
 
   bgm = "data\music\maou_bgm_8bit09.mp3"
   # 自キャラ移動関連
@@ -222,10 +223,73 @@ def main():
 
   # 自キャラの生成・初期化
   reimu = PlayerCharacter((2, 3), './data/img/tankenka.png')
+  setumei_flag = True
   pg.mixer.music.load(bgm)
   pg.mixer.music.play(loops=-1)
-  # while flag:
-  #   screen.fill((255, 255, 255))
+  Te = Tekikyara(pg.Vector2(0, 0), "data/img/tekikyara.png")
+  while setumei_flag:
+    for event in pg.event.get():
+      if event.type == pg.QUIT:  # ウィンドウ[X]の押下
+        exit_flag = True
+        setumei_flag = False
+        exit_code = '001'
+    screen.fill((255, 255, 255))
+    screen.blit(gameover_font.render(
+        f"～ルール説明～", True, 'BLACK'), (100, 50))
+    reimu.warp_to(pg.Vector2(2, 4))
+
+    screen.blit(start_font.render(
+        f"←のキャラクターを矢印キーで動かして階段を目指そう", True, 'BLACK'), (150, 150))
+    screen.blit(start_font.render(
+        f"スペースキーで攻撃!敵や壁を攻撃すると消すことができるぞ", True, 'BLACK'), (100, 250))
+    screen.blit(start_font.render(
+        f"体力が0になったらゲームオーバー", True, 'BLACK'), (100, 350))
+    screen.blit(start_font.render(
+        f"でも敵を10体倒すとlvアップ体力が増えるぞ", True, 'BLACK'), (100, 450))
+    screen.blit(start_font.render(
+        f"なるべく深い階層を目指そう", True, 'BLACK'), (100, 550))
+    screen.blit(reimu.get_img(6), reimu.get_dp())  # 自キャラ
+    screen.blit(start_font.render(
+        f"スペースでその他の説明", True, 'BLACK'), (700, 550))
+    for event in pg.event.get():
+      if event.type == pg.KEYDOWN:
+        if event.key == pg.K_SPACE:
+          setumei_flag = False
+    pg.display.update()
+    clock.tick(30)
+  setumei_flag = True
+  while setumei_flag:
+    Te.dir = 0
+    if event.type == pg.QUIT:  # ウィンドウ[X]の押下
+      exit_flag = True
+      setumei_flag = False
+      exit_code = '001'
+    screen.fill((255, 255, 255))
+    for event in pg.event.get():
+      if event.type == pg.QUIT:  # ウィンドウ[X]の押下
+        exit_flag = True
+        exit_code = '001'
+    screen.fill((255, 255, 255))
+    screen.blit(gameover_font.render(
+        f"～ルール説明～", True, 'BLACK'), (100, 50))
+    Te.warp_to(pg.Vector2(2, 4))
+    screen.blit(Te.teki_get_img(3), Te.get_dp())  # 自キャラ
+    screen.blit(start_font.render(
+        f"←は敵、追いかけてきて正面に立つと攻撃をしてくるぞ", True, 'BLACK'), (150, 150))
+    screen.blit(start_font.render(
+        f"ただし一回攻撃をすれば倒すことができるぞ", True, 'BLACK'), (100, 250))
+    screen.blit(start_font.render(
+        f"また，攻撃で迷路の壁も破壊できるから有効活用しよう", True, 'BLACK'), (100, 350))
+    screen.blit(start_font.render(
+        f"スペースでゲームスタート", True, 'BLACK'), (700, 550))
+    for event in pg.event.get():
+      if event.type == pg.KEYDOWN:
+        if event.key == pg.K_SPACE:
+          setumei_flag = False
+    pg.display.update()
+    clock.tick(30)
+
+  #
   # ゲームループ
   while not exit_flag:
     if (reimu.life <= 0):
@@ -373,6 +437,7 @@ def main():
               teki[x].pos = (pg.Vector2(p[0], p[1]))
               for muki in range(len(t_idou)):
                 if (t_idou[muki] == tekimuki):
+                  print(muki)
                   teki[x].dir = muki
           elif (teki_atackflag[x]):  # 敵の攻撃
             teki_atackflag[x] = teki[x].atack(
