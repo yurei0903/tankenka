@@ -327,6 +327,8 @@ def main():
       llsc.maze_change(llsc.LOAD, llsc.WALL_KOWARE, random.randint(0, 2))
       llsc.maze_change(llsc.LOAD, llsc.WALL_HARD, random.randint(0, 3))
       reimu.warp_to(pg.Vector2(1, 1))
+      teki_atackframe = []
+      teki_atackflag = []
       for x in range(tekikazu):
         tekibasho = []
         for i in range(len(llsc.maze)):
@@ -335,9 +337,7 @@ def main():
               tekibasho.append(pg.Vector2(i, j))  # 敵キャラ設置
         tekistart = random.choice(tekibasho)
         teki.append(Tekikyara(tekistart, "data/img/tekikyara.png"))
-        teki_atackflag = []
         teki_atackflag.append(True)
-        teki_atackframe = []
         teki_atackframe.append(0)
         teki_atackflag.append(True)
         teki_atackframe.append(frame)
@@ -437,7 +437,6 @@ def main():
               teki[x].pos = (pg.Vector2(p[0], p[1]))
               for muki in range(len(t_idou)):
                 if (t_idou[muki] == tekimuki):
-                  print(muki)
                   teki[x].dir = muki
           elif (teki_atackflag[x]):  # 敵の攻撃
             teki_atackflag[x] = teki[x].atack(
