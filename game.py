@@ -325,7 +325,7 @@ def main():
       llsc.maze_change(llsc.WALL, llsc.WALL_HARD, random.randint(0, 3))
       llsc.maze_change(llsc.LOAD, llsc.WALL, random.randint(0, 5))
       llsc.maze_change(llsc.LOAD, llsc.WALL_KOWARE, random.randint(0, 2))
-      llsc.maze_change(llsc.LOAD, llsc.WALL_HARD, random.randint(0, 3))
+      llsc.maze_change(llsc.LOAD, llsc.WALL_HARD, random.randint(0, 4))
       reimu.warp_to(pg.Vector2(1, 1))
       teki_atackframe = []
       teki_atackflag = []
